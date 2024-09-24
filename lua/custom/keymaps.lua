@@ -14,4 +14,5 @@ api.nvim_set_keymap('i', '<c-l>', '<Right>', { noremap = true }) -- enable to mo
 api.nvim_set_keymap('n', '<ESC><ESC>', ':nohl<CR>', { noremap = true }) -- disable search highlight
 api.nvim_set_keymap('n', '<c-n>', ':bn<CR>', { noremap = true }) -- switch next buffer
 api.nvim_set_keymap('n', '<c-p>', ':bp<CR>', { noremap = true }) -- switch previous buffer
+api.nvim_set_keymap('n', '<leader>cl', ':bd<CR>', { noremap = true }) -- close buffer
 vim.keymap.set('t', '<c-]>', [[<c-\><c-n>]]) -- for escaping terminal inside neovim
