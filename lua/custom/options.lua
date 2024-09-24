@@ -10,7 +10,7 @@ opt.smartindent = true
 -- visual
 -- opt.list = true
 -- opt.number = true
-opt.relativenumber = true
+-- opt.relativenumber = true
 -- opt.showmatch = true
 -- opt.termguicolors = true
 -- api.nvim_create_augroup('extra-whitespace', {})
