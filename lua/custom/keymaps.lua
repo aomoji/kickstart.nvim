@@ -1,8 +1,6 @@
 local api = vim.api
-local g = vim.g
 
 -- keymap
-g.mapleader = ' ' -- leader key
 api.nvim_set_keymap('n', ';', ':', { noremap = true }) -- swap ; and :
 api.nvim_set_keymap('n', ':', ';', { noremap = true }) -- swap ; and :
 api.nvim_set_keymap('n', 'j', 'gj', { noremap = true })
