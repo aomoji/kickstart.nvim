@@ -36,7 +36,7 @@ return {
         -- NOTE: prerequisite: open nvim in git repository
         {
           name = 'dbt_model',
-          command = "(cd $(git rev-parse --show-toplevel) && rg -o -e \"ref\\('(.*?)'\\)\" -e \"source\\('.*?',\\ *'(.*?)'\\)\" -e \"source\\('(.*?)',\\ *'.*?'\\)\" --type sql -r '$1$2$3' -I | sort | uniq)",
+          command = "(GIT_DIR=$(git rev-parse --show-toplevel) && cd $GIT_DIR && rg -o -e \"ref\\('(.*?)'\\)\" -e \"source\\('.*?',\\ *'(.*?)'\\)\" -e \"source\\('(.*?)',\\ *'.*?'\\)\" --type sql -r '$1$2$3' -I | sort | uniq)",
           -- previewer = easypick.previewers.default(),
           action = nvim_put,
         },
