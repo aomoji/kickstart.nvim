@@ -36,8 +36,7 @@ return {
         -- NOTE: prerequisite: open nvim in git repository
         {
           name = 'dbt_model',
-          command = "(GIT_DIR=$(git rev-parse --show-toplevel) && cd $GIT_DIR && rg -o -e \"ref\\('(.*?)'\\)\" -e \"source\\('.*?',\\ *'(.*?)'\\)\" -e \"source\\('(.*?)',\\ *'.*?'\\)\" --type sql -r '$1$2$3' -I | sort | uniq)",
-          -- previewer = easypick.previewers.default(),
+          command = "(GIT_DIR=$(git rev-parse --show-toplevel) && DBT_PJ_DIR=$(find $GIT_DIR -name 'dbt_project.yml' -not -path '*/dbt_packages/*' -exec dirname {} \\;) && find ${DBT_PJ_DIR}/models -name '*.yml' | sed 's/\\.yml//g' | awk -F '/' '{print $NF}')",
           action = nvim_put,
         },
       },
