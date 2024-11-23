@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -355,6 +355,7 @@ require('lazy').setup({
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      { 'nvim-telescope/telescope-live-grep-args.nvim' },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -378,19 +379,57 @@ require('lazy').setup({
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+      local lga_actions = require 'telescope-live-grep-args.actions'
       require('telescope').setup {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          mappings = {
+            i = {
+              ['<C-o>'] = function(p_bufnr)
+                require('telescope.actions').send_selected_to_qflist(p_bufnr)
+                vim.cmd.cfdo 'edit'
+              end,
+            },
+          },
+        },
+        pickers = {
+          live_grep = {
+            additional_args = function()
+              return { '--hidden' }
+            end,
+          },
+          buffers = {
+            mappings = {
+              n = {
+                ['<C-l>'] = require('telescope.actions').delete_buffer,
+              },
+              i = {
+                ['<C-l>'] = require('telescope.actions').delete_buffer,
+              },
+            },
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
+          },
+          live_grep_args = {
+            auto_quoting = true, -- enable/disable auto-quoting
+            -- define mappings, e.g.
+            mappings = { -- extend mappings
+              i = {
+                ['<C-k>'] = lga_actions.quote_prompt(),
+                ['<C-i>'] = lga_actions.quote_prompt { postfix = ' --iglob ' },
+              },
+            },
+            -- ... also accepts theme settings, for example:
+            -- theme = "dropdown", -- use dropdown theme
+            -- theme = { }, -- use own theme spec
+            -- layout_config = { mirror=true }, -- mirror preview pane
+            --
+            -- (memo) use "-." for searching hidden files
           },
         },
       }
@@ -398,19 +437,25 @@ require('lazy').setup({
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
+      pcall(require('telescope').load_extension, 'live_grep_args')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<leader>sf', function()
+        builtin.find_files { hidden = true }
+      end, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>sg', ":lua require('telescope').extensions.live_grep_args.live_grep_args()<CR>", { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>gs', builtin.git_status, { desc = '[G]it [S]tatus' })
+      vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
+      vim.keymap.set('n', '<leader>ch', builtin.command_history, { desc = '[C]ommand [H]istory' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -709,8 +754,10 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        terraform = { 'terraform_fmt' },
+        terragrunt = { 'terragrunt_hclfmt' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'isort', 'black' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -738,12 +785,13 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+              require('luasnip.loaders.from_vscode').lazy_load { paths = './my_snippets' }
+            end,
+          },
         },
       },
       'saadparwaiz1/cmp_luasnip',
@@ -753,6 +801,10 @@ require('lazy').setup({
       --  into multiple repos for maintenance purposes.
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
+      'hrsh7th/cmp-buffer',
+      'lukas-reineke/cmp-rg',
+      'ray-x/cmp-sql',
+      'chrisgrieser/cmp_yanky',
     },
     config = function()
       -- See `:help cmp`
@@ -785,7 +837,7 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
@@ -829,25 +881,116 @@ require('lazy').setup({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
+          { name = 'sql' },
+          { name = 'buffer' },
+          { name = 'rg' },
+          { name = 'cmp_yanky' },
         },
       }
     end,
   },
+
+  -- {
+  --   'rose-pine/neovim',
+  --   name = 'rose-pine',
+  --   config = function()
+  --     require('rose-pine').setup {
+  --       variant = 'auto', -- auto, main, moon, or dawn
+  --       dark_variant = 'main', -- main, moon, or dawn
+  --       dim_inactive_windows = false,
+  --       extend_background_behind_borders = true,
+  --
+  --       enable = {
+  --         terminal = true,
+  --         legacy_highlights = true, -- Improve compatibility for previous versions of Neovim
+  --         migrations = true, -- Handle deprecated options automatically
+  --       },
+  --
+  --       styles = {
+  --         bold = true,
+  --         italic = true,
+  --         transparency = false,
+  --       },
+  --
+  --       groups = {
+  --         border = 'muted',
+  --         link = 'iris',
+  --         panel = 'surface',
+  --
+  --         error = 'love',
+  --         hint = 'iris',
+  --         info = 'foam',
+  --         note = 'pine',
+  --         todo = 'rose',
+  --         warn = 'gold',
+  --
+  --         git_add = 'foam',
+  --         git_change = 'rose',
+  --         git_delete = 'love',
+  --         git_dirty = 'rose',
+  --         git_ignore = 'muted',
+  --         git_merge = 'iris',
+  --         git_rename = 'pine',
+  --         git_stage = 'iris',
+  --         git_text = 'rose',
+  --         git_untracked = 'subtle',
+  --
+  --         h1 = 'iris',
+  --         h2 = 'foam',
+  --         h3 = 'rose',
+  --         h4 = 'gold',
+  --         h5 = 'pine',
+  --         h6 = 'foam',
+  --       },
+  --
+  --       palette = {
+  --         -- Override the builtin palette per variant
+  --         -- moon = {
+  --         --     base = '#18191a',
+  --         --     overlay = '#363738',
+  --         -- },
+  --       },
+  --
+  --       highlight_groups = {
+  --         -- Comment = { fg = "foam" },
+  --         -- VertSplit = { fg = "muted", bg = "muted" },
+  --       },
+  --
+  --       before_highlight = function(group, highlight, palette)
+  --         -- Disable all undercurls
+  --         -- if highlight.undercurl then
+  --         --     highlight.undercurl = false
+  --         -- end
+  --         --
+  --         -- Change palette colour
+  --         -- if highlight.fg == palette.pine then
+  --         --     highlight.fg = palette.foam
+  --         -- end
+  --       end,
+  --     }
+  --
+  --     vim.cmd 'colorscheme rose-pine'
+  --     -- vim.cmd 'colorscheme rose-pine-main'
+  --     -- vim.cmd 'colorscheme rose-pine-moon'
+  --     -- vim.cmd 'colorscheme rose-pine-dawn'
+  --   end,
+  -- },
 
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    'dam9000/colorscheme-midnightblue',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'midnightblue'
 
       -- You can configure highlights by doing something like:
+      vim.o.background = 'dark'
       vim.cmd.hi 'Comment gui=none'
     end,
   },
@@ -868,6 +1011,7 @@ require('lazy').setup({
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
+      -- - sa)   - [S]urround [A]dd [)]Paren in Visual Mode
       -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
@@ -927,18 +1071,18 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
@@ -968,3 +1112,6 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+require 'custom.keymaps'
+require 'custom.options'
