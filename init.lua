@@ -330,11 +330,16 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          mappings = {
+            i = {
+              ['<C-o>'] = function(p_bufnr)
+                require('telescope.actions').send_selected_to_qflist(p_bufnr)
+                vim.cmd.cfdo 'edit'
+              end,
+            },
+          },
+        },
         pickers = {
           live_grep = {
             additional_args = function()
