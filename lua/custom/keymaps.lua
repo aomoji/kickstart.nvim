@@ -15,4 +15,5 @@ api.nvim_set_keymap('n', '<ESC><ESC>', ':nohl<CR>', { noremap = true }) -- disab
 api.nvim_set_keymap('n', '<c-n>', ':bn<CR>', { noremap = true }) -- switch next buffer
 api.nvim_set_keymap('n', '<c-p>', ':bp<CR>', { noremap = true }) -- switch previous buffer
 api.nvim_set_keymap('n', '<leader>cl', ':bd<CR>:bn<CR>', { noremap = true }) -- close buffer
+api.nvim_set_keymap('n', '<leader>cp', ':let @+ = expand("%")<CR>', { noremap = true }) -- copy current file name
 vim.keymap.set('t', '<c-]>', [[<c-\><c-n>]]) -- for escaping terminal inside neovim
